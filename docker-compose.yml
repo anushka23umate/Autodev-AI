@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: autodev-postgres
+    environment:
+      POSTGRES_USER: autodev
+      POSTGRES_PASSWORD: autodev
+      POSTGRES_DB: autodev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autodev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autodev-network
+
+  redis:
+    image: redis:7
+    container_name: autodev-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autodev-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: autodev-backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://autodev:autodev@postgres:5432/autodev
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://ollama:11434
+      PROJECTS_BASE_PATH: /app/generated_projects
+      ENVIRONMENT: development
+    volumes:
+      - ./backend:/app
+      - generated_projects:/app/generated_projects
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - autodev-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    container_name: autodev-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    depends_on:
+      - backend
+    networks:
+      - autodev-network
+
+volumes:
+  postgres_data:
+  generated_projects:
+
+networks:
+  autodev-network:
+    driver: bridge
