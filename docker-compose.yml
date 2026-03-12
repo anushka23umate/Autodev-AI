@@ -33,6 +33,26 @@ services:
     networks:
       - autodev-network
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: autodev-ollama
+    # Port 11434 is often already used by a local Ollama installation.
+    # If you want the container exposed on the host, uncomment the line below
+    # and ensure the host port is available (or change it).
+    #ports:
+    #  - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autodev-network
+
   backend:
     build:
       context: ./backend
@@ -42,7 +62,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://autodev:autodev@postgres:5432/autodev
+      DATABASE_URL: postgresql+asyncpg://autodev:autodev@postgres:5432/autodev
       REDIS_URL: redis://redis:6379/0
       OLLAMA_BASE_URL: http://ollama:11434
       PROJECTS_BASE_PATH: /app/generated_projects
@@ -54,6 +74,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     networks:
       - autodev-network
@@ -77,6 +99,7 @@ services:
 volumes:
   postgres_data:
   generated_projects:
+  ollama_data:
 
 networks:
   autodev-network:

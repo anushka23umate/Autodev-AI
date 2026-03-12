@@ -49,6 +49,12 @@ REM Create projects directory
 if not exist "generated_projects" mkdir generated_projects
 echo ✓ Created generated_projects directory
 
+REM Avoid "recreate" from a removed image (No such image / ContainerConfig errors).
+REM Tear down app containers so 'up' creates fresh ones instead of recreating.
+echo Stopping existing containers (keeps volumes)...
+docker-compose down 2>nul
+docker rm -f autodev-backend autodev-frontend 2>nul
+
 REM Build and start services
 echo.
 echo Building and starting services...

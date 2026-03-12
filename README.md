@@ -325,6 +325,18 @@ docker-compose down -v
 docker-compose up
 ```
 
+### Docker "No such image" or `ContainerConfig` error
+
+If you see `No such image: sha256:...` or `KeyError: 'ContainerConfig'` when running `docker-compose up` or `setup.sh`, a container is still tied to an old image that was removed. Fix it by removing those containers and starting clean (volumes are kept):
+
+```bash
+docker-compose down
+docker rm -f autodev-backend autodev-frontend
+docker-compose up --build -d
+```
+
+Or re-run the setup script; it now does this cleanup automatically.
+
 ### Frontend API Connection
 
 Update `NEXT_PUBLIC_API_URL` environment variable in `docker-compose.yml`

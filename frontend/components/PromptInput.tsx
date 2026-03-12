@@ -60,10 +60,13 @@ export default function PromptInput({ onSubmit, isLoading }: PromptInputProps) {
           {examples.map((example, idx) => (
             <button
               key={idx}
+              type="button"
               onClick={() => {
                 setPrompt(example)
+                onSubmit(example)
               }}
-              className="w-full text-left px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-sm transition"
+              disabled={isLoading}
+              className="w-full text-left px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               → {example}
             </button>

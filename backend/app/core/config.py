@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", "postgresql://autodev:autodev@postgres:5432/autodev"
+        "DATABASE_URL", "postgresql+asyncpg://autodev:autodev@postgres:5432/autodev"
     )
     
     # Ollama

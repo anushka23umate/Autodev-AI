@@ -9,6 +9,7 @@ __pycache__/
 
 # Generated files
 generated_projects/
+my-generated-project/
 !generated_projects/.gitkeep
 .next/
 .venv/
@@ -43,5 +44,4 @@ yarn-error.log*
 .coverage
 htmlcov/
 
-# Docker
-.dockerignore
+# Docker (keep .dockerignore in repo; ignore local overrides if any)

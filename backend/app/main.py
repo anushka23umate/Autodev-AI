@@ -2,8 +2,8 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.database import init_db, get_db
 from app.api import routes
+from app.core.database import init_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -11,6 +11,7 @@ ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
+RUN mkdir -p /app/public
 
 FROM node:18-alpine
 

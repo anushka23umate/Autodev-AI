@@ -57,7 +57,13 @@ fi
 mkdir -p generated_projects
 echo "✓ Created generated_projects directory"
 
-# Build and start services
+# Avoid "recreate" from a removed image (No such image / ContainerConfig errors).
+# Remove app containers FIRST by name (does not inspect image); then down; then up.
+echo "Removing existing app containers (keeps volumes)..."
+docker rm -f autodev-backend autodev-frontend 2>/dev/null || true
+docker-compose down 2>/dev/null || true
+
+# Build and start services (creates new containers instead of recreating)
 echo ""
 echo "Building and starting services..."
 docker-compose up --build -d
