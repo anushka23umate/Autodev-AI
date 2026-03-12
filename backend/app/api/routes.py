@@ -1,7 +1,11 @@
 import logging
 import asyncio
+import zipfile
+import io
+from pathlib import Path
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import select
 
@@ -10,6 +14,7 @@ from app.core.config import settings
 from app.models.project import Project, ProjectStatus
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate
 from app.services.orchestrator import ProjectOrchestrator
+from app.utils.path_utils import get_project_path
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["projects"])
@@ -73,6 +78,56 @@ async def get_project(
         raise
     except Exception as e:
         logger.error(f"Error fetching project: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/projects/{project_id}/download")
+async def download_project_zip(
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Download the generated project as a ZIP file. Only available when status is completed.
+    """
+    try:
+        stmt = select(Project).where(Project.id == project_id)
+        result = await db.execute(stmt)
+        project = result.scalars().first()
+
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        if project.status != ProjectStatus.COMPLETED:
+            raise HTTPException(
+                status_code=400,
+                detail="Project is not ready for download. Generation must complete first.",
+            )
+
+        project_path = get_project_path(str(project_id))
+        if not project_path.exists():
+            raise HTTPException(status_code=404, detail="Project files not found")
+
+        # Build zip in memory
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for file_path in project_path.rglob("*"):
+                if file_path.is_file():
+                    arcname = file_path.relative_to(project_path)
+                    zf.write(file_path, arcname)
+
+        buffer.seek(0)
+        filename = f"project-{project_id}.zip"
+        return StreamingResponse(
+            buffer,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating project zip: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
